@@ -1,8 +1,0 @@
-import "pkl:{{.Format}}"
-
-file = read("file:{{.FileFormat}}")
-parsed = new {{.Format}}.Parser {}.parse(file)
-
-output {
-  value = parsed
-}
