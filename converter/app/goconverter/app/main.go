@@ -79,9 +79,35 @@ func Totype(r *http.Request) ([]string, error) {
 	return options, nil
 }
 
-func createTransforme(typesFile []ResponseData, toType []string) {
-	fmt.Println(typesFile)
-	fmt.Println(toType)
+func countFormat(typesFile []ResponseData) (int) {
+	i := 0
+	prev := ""
+
+	for _, val := range typesFile {
+		if val.Ct_Label != prev {
+			i = i + 1
+			prev = val.Ct_Label
+		}
+	} 
+	return i
+}
+
+func createTransforme(typesFile []ResponseData, toType []string) (path string, err error) {
+	size := countFormat(typesFile)
+	dirName := GetUid().String()
+	pathUpload := "/tmp/generate/" + dirName + "/"
+
+	if err := createDir(pathUpload); err != nil {
+		return "", err
+	}
+	if size == 1 {
+		return pathUpload, nil
+	}
+
+	for _, val := range typesFile {
+		fmt.Println(val)
+	}
+	return pathUpload, nil
 }
 
 func Converte(w http.ResponseWriter, r *http.Request) {
