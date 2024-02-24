@@ -10,16 +10,18 @@ import (
 	"github.com/gorilla/mux"
 )
 
+//typer return map of extention manage by PKL
 func typer(a string) (string, error){
 	e := map[string]string {
 		"json": "json",
-		"jsonnet": "i.jsonnet",
+		"jsonnet": "jsonnet",
 		"pcf":"pcf",
 		"properties":"properties",
 		"plist":"plist",
 		"textproto":"textproto",
 		"xml":"xml",
-		"yaml":"yml",
+		"yaml":"yaml",
+		"yml": "yml",
 	}
 	if val, ok := e[a]; ok {
 		return val, nil
@@ -27,15 +29,19 @@ func typer(a string) (string, error){
 	return "", errors.New("ho")
 }
 
+
+// ConvertFiles transform conf file to other conf file
 func ConverteFile(types, path string) error {
-	ee := NewFormat("json", "./tmp/file/file.json")
-	ee.CreatePKL("./tmp/file/file.pkl")
-	ee.ExecPKL("json")
-	ee.CreateNew("./tmp/file/test.json")
+	ee := NewFormat(types, path)
+	ee.CreatePKL("/tmp/file/generatedpkl/" + types + ".pkl")
+	ee.ExecPKL(types)
+	ee.CreateNew("/tmp/file/test.json")
 	ee.Erase()
 	return nil
 }
 
+
+// uploadFunc download one or more files
 func uploadFunc(r *http.Request, pathUpload string) (error){
 	formdata := r.MultipartForm
 	files := formdata.File["files"]
@@ -43,7 +49,6 @@ func uploadFunc(r *http.Request, pathUpload string) (error){
 		return fmt.Errorf("Someting went wrong")
 	}
 	for _, file := range files {
-		fmt.Println("1")
 		src, err := file.Open()
 		if err != nil {
 			return err
@@ -62,10 +67,12 @@ func uploadFunc(r *http.Request, pathUpload string) (error){
 	return nil
 }
 
+// createDir create directories
 func createDir(path string) (error) {
 	return os.MkdirAll(path, 0755)
 }
 
+// Totype return configuration file type from option of form
 func Totype(r *http.Request) ([]string, error) {
 	err := r.ParseForm()
 	if err != nil {
@@ -79,6 +86,7 @@ func Totype(r *http.Request) ([]string, error) {
 	return options, nil
 }
 
+// countFormat return number ofconfiguration to transform
 func countFormat(typesFile []ResponseData) (int) {
 	i := 0
 	prev := ""
@@ -92,8 +100,63 @@ func countFormat(typesFile []ResponseData) (int) {
 	return i
 }
 
+// create all dir of conf file if multiple file with multiple conf file was send
+func CreateGenerated(path string, toType []string) error {
+	for _, val := range toType {
+		if err := createDir(path + val); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+
+func OneFormat(path string, typesFile []ResponseData, toType string) (err error){
+	for _, val := range typesFile {
+		if _, err := typer(val.Ct_Label); err != nil {
+			return fmt.Errorf("not good type")
+		}
+		info, err  := GetInfo(val.Path)
+		if err != nil {
+			fmt.Println(err)
+			return err
+		}
+		fmt.Println(info)
+	}
+	return nil
+}
+
+
+func CreateDirNeeded(path string, types []string) error {
+	for _, ty := range types {
+		if err := createDir(path +  "/" + ty); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func MultipleFormat(path string, typesFile []ResponseData, toType []string) error  {
+	if err := CreateDirNeeded(path, toType); err != nil {
+		return err
+	}
+	for _, val := range typesFile {
+		if _, err := typer(val.Ct_Label); err != nil {
+			continue
+		}
+		info, err  := GetInfo(val.Path)
+		if err != nil {
+			return  err
+		}
+		fmt.Println(info)
+	}
+	return nil
+}
+
+
+// create dir for new conf file and start transform
 func createTransforme(typesFile []ResponseData, toType []string) (path string, err error) {
-	size := countFormat(typesFile)
+	size := len(toType)
 	dirName := GetUid().String()
 	pathUpload := "/tmp/generate/" + dirName + "/"
 
@@ -101,15 +164,12 @@ func createTransforme(typesFile []ResponseData, toType []string) (path string, e
 		return "", err
 	}
 	if size == 1 {
-		return pathUpload, nil
+		return pathUpload, OneFormat(pathUpload, typesFile, toType[0])
 	}
-
-	for _, val := range typesFile {
-		fmt.Println(val)
-	}
-	return pathUpload, nil
+	return pathUpload, MultipleFormat(pathUpload, typesFile, toType)
 }
 
+// handler for get file, return path where dowload file or dir
 func Converte(w http.ResponseWriter, r *http.Request) {
 	err := r.ParseMultipartForm(10 << 20)
 	if err != nil {
