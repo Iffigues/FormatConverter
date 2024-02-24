@@ -6,13 +6,13 @@ const ServerHandler = ({ selectedOptions, files }) => {
 console.log(files)
       const formData = new FormData();
       selectedOptions.forEach((option, index) => {
-        formData.append(`option[${index}]`, option);
+        formData.append(`options`, option);
       });
 
-      // Append files
-      files.forEach((file, index) => {
-        formData.append(`file${index + 1}`, file);
+	files.forEach((file, index) => {
+        formData.append(`files`, file);
       });
+
 
       // Make a POST request to the server
       const response = await fetch('http://gopiko.fr:8780/', {

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"github.com/rs/cors"
 	"os"
 	"io"
 	"errors"
@@ -36,15 +37,13 @@ func ConverteFile(types, path string) error {
 }
 
 func uploadFunc(r *http.Request, pathUpload string) (error){
-	err := r.ParseMultipartForm(10 << 20) // 10 MB limit
-	if err != nil {
-		return err
-	}
-
 	formdata := r.MultipartForm
-
 	files := formdata.File["files"]
+	if len(files) == 0 {
+		return fmt.Errorf("Someting went wrong")
+	}
 	for _, file := range files {
+		fmt.Println("1")
 		src, err := file.Open()
 		if err != nil {
 			return err
@@ -56,8 +55,9 @@ func uploadFunc(r *http.Request, pathUpload string) (error){
 		}
 		defer dst.Close()
 		_, err = io.Copy(dst, src)
-		return err
-
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -71,41 +71,75 @@ func Totype(r *http.Request) ([]string, error) {
 	if err != nil {
 		return nil, err
 	}
-	return r.Form["option"], nil
+	options, ok := r.Form["options"]
+	if !ok || len(options) == 0 {
+		return nil, fmt.Errorf("no 'options' parameter provided in the request")
+	}
+
+	return options, nil
+}
+
+func createTransforme(typesFile []ResponseData, toType []string) {
+	fmt.Println(typesFile)
+	fmt.Println(toType)
 }
 
 func Converte(w http.ResponseWriter, r *http.Request) {
-	dirName := GetUid().String()
-	pathUpload :=  "./tmp/file/" + dirName + "/"
-	if createDir(pathUpload) != nil {
+	err := r.ParseMultipartForm(10 << 20)
+	if err != nil {
+		err := fmt.Errorf("Something went wrong")
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return 
+	}
+
+	toType, err := Totype(r)
+	if err != nil {
+		fmt.Println(err)
+		err := fmt.Errorf("new error")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	err := uploadFunc(r, pathUpload)
+	if len(toType) == 0 {
+		fmt.Println(err)
+		err := fmt.Errorf("new error")
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return	
+	}
+	dirName := GetUid().String()
+	pathUpload :=  "/tmp/file/" + dirName + "/"
+	if err :=  createDir(pathUpload); err  != nil {
+		fmt.Println(err)
+		return
+	}
+	err = uploadFunc(r, pathUpload)
 	if err != nil {
+		fmt.Println(err)
 		err := fmt.Errorf("Something went wrong")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	typesFiles, err := Magika(pathUpload)
 	if err != nil {
+		fmt.Println(err)
 		err := fmt.Errorf("Someting went wrong")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-	fmt.Println(typesFiles)
-	toType, err := Totype(r)
-	if err != nil {
-		err := fmt.Errorf("new error")
-		http.Error(w, err.Error(), http.StatusInternalServerError)
-		return 
-	}
-	for _, val := range toType {
-		fmt.Println(val)
-	}
+	createTransforme(typesFiles, toType)
 }
 
 func main() {
 	mux := mux.NewRouter()
 	mux.HandleFunc("/", Converte).Methods("POST")
-	http.ListenAndServe(":8780", mux)
+	   // Create a new CORS handler
+	c := cors.New(cors.Options{
+     	AllowedOrigins: []string{"*"},
+	AllowedMethods: []string{"GET", "POST", "OPTIONS"},
+      AllowedHeaders: []string{"*"},
+      AllowCredentials: true,
+      Debug: true,
+   })
+	 handler := c.Handler(mux)
+	 http.Handle("/", handler)
+	http.ListenAndServe(":8780", handler)
 }

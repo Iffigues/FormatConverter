@@ -10,7 +10,7 @@ magika = Magika()
 
 def get_dir_content(a):
     e = []
-    path = "./"
+    path = "/"
 
     try:
         dir_contents = os.listdir(path + a)
