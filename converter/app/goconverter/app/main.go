@@ -4,9 +4,12 @@ import (
 	"github.com/rs/cors"
 	"os"
 	"io"
+	"io/fs"
 	"errors"
 	"net/http"
 	"fmt"
+	"strings"
+	"path/filepath"
 	"github.com/gorilla/mux"
 )
 
@@ -21,7 +24,6 @@ func typer(a string) (string, error){
 		"textproto":"textproto",
 		"xml":"xml",
 		"yaml":"yaml",
-		"yml": "yml",
 	}
 	if val, ok := e[a]; ok {
 		return val, nil
@@ -30,13 +32,40 @@ func typer(a string) (string, error){
 }
 
 
-// ConvertFiles transform conf file to other conf file
-func ConverteFile(types, path string) error {
-	ee := NewFormat(types, path)
-	ee.CreatePKL("/tmp/file/generatedpkl/" + types + ".pkl")
-	ee.ExecPKL(types)
-	ee.CreateNew("/tmp/file/test.json")
-	ee.Erase()
+// ConvertFiles transform conf file to other conf fil
+func ConverteFile(name, path  string, types ResponseData, to string) error {
+	fmt.Println(to)
+	ee := NewFormat(types.Ct_Label, types.Path)
+	err := ee.CreatePKL("/tmp/file/generatedpkl/" + name + ".pkl")
+	if err != nil {
+		fmt.Println(name)
+		return err
+	}
+	err = ee.CreateFile(name) 
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	println("2")
+	err = ee.Exec(name)
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	println("3")
+	err = ee.ExecPKL(to)
+	if err != nil {
+		fmt.Println(ee)
+		return err
+	}
+	println("4")
+	_, err = ee.CreateNew(path  + name + "." + to)
+	fmt.Println("final = ", path +  name + "." + to )
+	if err != nil {
+		fmt.Println(err)
+		return err
+	}
+	//ee.Erase()
 	return nil
 }
 
@@ -82,7 +111,7 @@ func Totype(r *http.Request) ([]string, error) {
 	if !ok || len(options) == 0 {
 		return nil, fmt.Errorf("no 'options' parameter provided in the request")
 	}
-
+	
 	return options, nil
 }
 
@@ -111,17 +140,41 @@ func CreateGenerated(path string, toType []string) error {
 }
 
 
+func GetName(e fs.FileInfo) (name string, dir bool) {
+	if e.IsDir() {
+		return "", true
+	}
+	i := e.Name()
+	filePath := i
+	baseName := filepath.Base(filePath)
+
+	// Use filepath.Ext to get the file extension
+	ext := filepath.Ext(baseName)
+
+	// Use strings.TrimSuffix to remove the extension from the base name
+	nam := strings.TrimSuffix(baseName, ext)
+	return nam, false
+}
+
 func OneFormat(path string, typesFile []ResponseData, toType string) (err error){
 	for _, val := range typesFile {
 		if _, err := typer(val.Ct_Label); err != nil {
-			return fmt.Errorf("not good type")
+			continue
 		}
 		info, err  := GetInfo(val.Path)
 		if err != nil {
 			fmt.Println(err)
 			return err
 		}
-		fmt.Println(info)
+		name, isDir := GetName(info)
+		if isDir {
+			continue
+		}
+		if err := ConverteFile(name, path, val, toType); err != nil {
+			fmt.Println(err)
+			return err
+		}
+			
 	}
 	return nil
 }
@@ -158,7 +211,7 @@ func MultipleFormat(path string, typesFile []ResponseData, toType []string) erro
 func createTransforme(typesFile []ResponseData, toType []string) (path string, err error) {
 	size := len(toType)
 	dirName := GetUid().String()
-	pathUpload := "/tmp/generate/" + dirName + "/"
+	pathUpload := "/tmp/file/generate/" + dirName + "/"
 
 	if err := createDir(pathUpload); err != nil {
 		return "", err

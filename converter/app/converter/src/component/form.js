@@ -10,25 +10,16 @@ const CheckboxForm = ({ selectedOptions, handleCheckboxChange, handleSubmit }) =
           checked={selectedOptions.includes("json")}
           onChange={() => handleCheckboxChange("json")}
         />
-        Option 1
+        json
       </label>
       <label>
         <input
           type="checkbox"
-          value="yml"
-          checked={selectedOptions.includes("yml")}
-          onChange={() => handleCheckboxChange("yml")}
+          value="yaml"
+          checked={selectedOptions.includes("yaml")}
+          onChange={() => handleCheckboxChange("yaml")}
         />
-        Option 2
-      </label>
-      <label>
-        <input
-          type="checkbox"
-          value="option3"
-          checked={selectedOptions.includes("option3")}
-          onChange={() => handleCheckboxChange("option3")}
-        />
-        Option 3
+        yaml
       </label>
     </form>
   );

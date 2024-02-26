@@ -3,10 +3,11 @@ package main
 import (
 	"os"
 	"text/template"
+	"fmt"
 )
 
 type Format struct {
-	id         string
+	id	  string
 	Format     string
 	FileFormat string
 	PKLPath    string
@@ -23,18 +24,18 @@ func NewFormat(format, fileFormat string) *Format {
 	}
 }
 
-func (f *Format) CreateFile() error {
+func (f *Format) CreateFile(name string) error {
 	tmpl, err := template.ParseFiles("pklTemplate/pkltemplate")
 	if err != nil {
 		return err
 	}
 
-	file, err := os.Create("./tmp/pkl/" + f.id + ".pkl")
+	file, err := os.Create("/tmp/file/generatedpkl/" + name + ".pkl")
 	if err != nil {
 		return err
 	}
 	defer file.Close()
-
 	err = tmpl.Execute(file, f)
+	fmt.Println("err = ",err)
 	return err
 }
