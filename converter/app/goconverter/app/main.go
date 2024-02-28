@@ -38,34 +38,25 @@ func ConverteFile(name, path  string, types ResponseData, to string) error {
 	ee := NewFormat(types.Ct_Label, types.Path)
 	err := ee.CreatePKL("/tmp/file/generatedpkl/" + name + ".pkl")
 	if err != nil {
-		fmt.Println(name)
 		return err
 	}
 	err = ee.CreateFile(name) 
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-	println("2")
 	err = ee.Exec(name)
 	if err != nil {
-		fmt.Println(err)
 		return err
 	}
-	println("3")
 	err = ee.ExecPKL(to)
 	if err != nil {
-		fmt.Println(ee)
 		return err
 	}
-	println("4")
 	_, err = ee.CreateNew(path  + name + "." + to)
-	fmt.Println("final = ", path +  name + "." + to )
 	if err != nil {
 		fmt.Println(err)
 		return err
 	}
-	//ee.Erase()
 	return nil
 }
 
@@ -163,7 +154,6 @@ func OneFormat(path string, typesFile []ResponseData, toType string) (err error)
 		}
 		info, err  := GetInfo(val.Path)
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 		name, isDir := GetName(info)
@@ -171,7 +161,6 @@ func OneFormat(path string, typesFile []ResponseData, toType string) (err error)
 			continue
 		}
 		if err := ConverteFile(name, path, val, toType); err != nil {
-			fmt.Println(err)
 			return err
 		}
 			
@@ -201,7 +190,15 @@ func MultipleFormat(path string, typesFile []ResponseData, toType []string) erro
 		if err != nil {
 			return  err
 		}
-		fmt.Println(info)
+		name, isDir := GetName(info)
+		if isDir {
+			continue
+		}
+		for _, tt := range toType {
+			if err := ConverteFile(name, path + tt + "/", val, tt); err != nil {
+				return err
+			}
+		}
 	}
 	return nil
 }
@@ -245,7 +242,7 @@ func Converte(w http.ResponseWriter, r *http.Request) {
 		return	
 	}
 	dirName := GetUid().String()
-	pathUpload :=  "/tmp/file/" + dirName + "/"
+	pathUpload :=  "/tmp/file/file/" + dirName + "/"
 	if err :=  createDir(pathUpload); err  != nil {
 		fmt.Println(err)
 		return
