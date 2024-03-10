@@ -1,15 +1,18 @@
 package main
 
 import (
+	"context"
+	"converter/conf"
+	"converter/logger"
+	"converter/pklhandler"
+	"converter/server"
 	"errors"
 	"fmt"
 	"io/fs"
+	"log"
 	"net/http"
 	"path/filepath"
 	"strings"
-
-	"github.com/gorilla/mux"
-	"github.com/rs/cors"
 )
 
 // typer return map of extention manage by PKL
@@ -32,26 +35,22 @@ func typer(a string) (string, error) {
 
 // ConvertFiles transform conf file to other conf fil
 func ConverteFile(name, path string, types ResponseData, to string) error {
-	ee := NewFormat(types.Ct_Label, types.Path)
-	if err := ee.CreatePKL("/tmp/file/generatedpkl/" + name + ".pkl"); err != nil {
+	ee, err := NewFormat(types.Ct_Label, types.Path)
+	if err != nil {
 		return err
 	}
 	if err := ee.CreateFile(name); err != nil {
 		return err
 	}
 
-	if err := ee.Exec(name); err != nil {
+	if err := ee.Exec(name, "/tmp/file/generatedpkl/"+ee.pklDirname+"/"+name+".pkl"); err != nil {
 		return err
 	}
 
-	if err := ee.ExecPKL(to); err != nil {
+	if err := ee.ExecPKL(to, path+name+"."+to); err != nil {
 		return err
 	}
 
-	if _, err := ee.CreateNew(path + name + "." + to); err != nil {
-		fmt.Println(err)
-		return err
-	}
 	return nil
 }
 
@@ -90,11 +89,7 @@ func GetName(e fs.FileInfo) (name string, dir bool) {
 	i := e.Name()
 	filePath := i
 	baseName := filepath.Base(filePath)
-
-	// Use filepath.Ext to get the file extension
 	ext := filepath.Ext(baseName)
-
-	// Use strings.TrimSuffix to remove the extension from the base name
 	nam := strings.TrimSuffix(baseName, ext)
 	return nam, false
 }
@@ -108,7 +103,6 @@ func CreateDirNeeded(path string, types []string) error {
 	return nil
 }
 
-// handler for get file, return path where dowload file or dir
 func Converte(w http.ResponseWriter, r *http.Request) {
 	if err := r.ParseMultipartForm(10 << 20); err != nil {
 		err := fmt.Errorf("Something went wrong")
@@ -118,7 +112,6 @@ func Converte(w http.ResponseWriter, r *http.Request) {
 
 	toType, err := Totype(r)
 	if err != nil {
-		fmt.Println(err)
 		err := fmt.Errorf("new error")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -131,18 +124,15 @@ func Converte(w http.ResponseWriter, r *http.Request) {
 	dirName := GetUid().String()
 	pathUpload := "/tmp/file/file/" + dirName + "/"
 	if err := createDir(pathUpload); err != nil {
-		fmt.Println(err)
 		return
 	}
 	if err = uploadFunc(r, pathUpload); err != nil {
-		fmt.Println(err)
 		err := fmt.Errorf("Something went wrong")
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 	typesFiles, err := Magika(pathUpload)
 	if err != nil {
-		fmt.Println(err)
 		err := fmt.Errorf("Someting went wrong")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -151,17 +141,24 @@ func Converte(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	mux := mux.NewRouter()
-	mux.HandleFunc("/", Converte).Methods("POST")
-	// Create a new CORS handler
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"*"},
-		AllowedMethods:   []string{"GET", "POST", "OPTIONS"},
-		AllowedHeaders:   []string{"*"},
-		AllowCredentials: true,
-		Debug:            true,
-	})
-	handler := c.Handler(mux)
-	http.Handle("/", handler)
-	http.ListenAndServe(":8780", handler)
+	confs, err := conf.NewConf(context.Background(), "pkl/local/appConfig.pkl")
+	if err != nil {
+		log.Fatal(err)
+	}
+	logs := logger.NewLog(confs.Cfg.LogDir)
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	serve, err := server.NewServer(confs, logs)
+	if err != nil {
+		logs.Fatal(err.Error())
+		return
+	}
+	p := pklhandler.NewPKLHandler()
+	serve.AddRoute(p)
+	serve.Start()
+	for {
+		serve.Serve()
+	}
 }

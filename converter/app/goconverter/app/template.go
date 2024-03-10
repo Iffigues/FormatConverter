@@ -8,20 +8,24 @@ import (
 
 type Format struct {
 	id	  string
+	pklDirname string
 	Format     string
 	FileFormat string
 	PKLPath    string
 	NewPath    string
-	PKL        []byte
-	RenderPKL  []byte
 }
 
-func NewFormat(format, fileFormat string) *Format {
+func NewFormat(format, fileFormat string) (*Format, error) {
+	dirname := GetUid().String()
+	if err := createDir("/tmp/file/generatedpkl/" + dirname); err != nil {
+		return nil, err
+	}
 	return &Format{
+		pklDirname: dirname,
 		id:         GetUid().String(),
 		Format:     format,
 		FileFormat: fileFormat,
-	}
+	}, nil 
 }
 
 func (f *Format) CreateFile(name string) error {
@@ -29,8 +33,7 @@ func (f *Format) CreateFile(name string) error {
 	if err != nil {
 		return err
 	}
-
-	file, err := os.Create("/tmp/file/generatedpkl/" + name + ".pkl")
+	file, err := os.Create("/tmp/file/generatedpkl/" + f.pklDirname  + "/" + name + ".pkl")
 	if err != nil {
 		return err
 	}

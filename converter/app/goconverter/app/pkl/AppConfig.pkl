@@ -1,0 +1,14 @@
+@go.Package { name = "converter/appconfig" }
+module converter
+
+import "package://pkg.pkl-lang.org/pkl-go/pkl.golang@0.5.3#/go.pkl"
+
+port             :   String
+generateDir      :   String
+generatedPKL     :   String
+PKLCommand       :   String
+PKLTemplate         : String
+fileDir          :   String
+pythonMagickaAPIUrl : String
+logDir: String
+format           :   Mapping<String, String>

@@ -1,10 +1,13 @@
 module converter
 
-go 1.21.5
-
-require github.com/google/uuid v1.6.0
+go 1.22.1
 
 require (
-	github.com/gorilla/mux v1.8.1 // indirect
-	github.com/rs/cors v1.10.1 // indirect
+	github.com/apple/pkl-go v0.5.3
+	github.com/google/uuid v1.6.0
+)
+
+require (
+	github.com/vmihailenco/msgpack/v5 v5.3.5 // indirect
+	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 )

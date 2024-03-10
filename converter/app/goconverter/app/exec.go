@@ -5,16 +5,14 @@ import (
 	"os/exec"
 )
 
-func (f *Format) Exec(a string) error {
-	cmd := exec.Command("/home/debian/pkl", "eval", "/tmp/file/generatedpkl/"+ a +".pkl")
+func (f *Format) Exec(a, out  string) error {
+	dest := "/tmp/file/generatedpkl/" + f.pklDirname + "/" +a + ".pkl"
+	cmd := exec.Command("pkl", "eval", dest, "-o", out)
 	output, err := cmd.CombinedOutput()
-	fmt.Println("f = llll ",f.PKLPath, output)
 	if err != nil {
 		fmt.Println("err, la ", err, string(output), a)
 		return err
 	}
-	f.PKLPath  =  "/tmp/file/generatedpkl/"+ a +".pkl"  
-	 fmt.Println("hazi ", f.PKLPath)
-	f.PKL = output
+	f.PKLPath  =  dest
 	return nil
 }

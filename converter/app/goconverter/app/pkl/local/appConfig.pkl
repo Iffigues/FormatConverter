@@ -1,0 +1,22 @@
+amends "../AppConfig.pkl"
+
+port			 =  read("env:PORT")
+generateDir      =  "/tmp/file/generate/"
+generatedPKL     =  "/tmp/file/generatedpkl/"
+PKLCommand       =  "pkl"
+fileDir          =  "/tmp/file/file/"
+pythonMagickaAPIUrl = "http://gopiko.fr:5000/path/"
+PKLTemplate =   "pklTemplate/pkltemplate"
+logDir = "log/log.log"
+
+format {
+	["json"]	   =    "json"
+	["jsonnet"]    =	"jsonniet"
+	["pcf"]		   =	"pcf"
+	["properties"] =	"properties"
+	["plist"]	   =	"plist"
+	["textproto"]  =	"textproto"
+	["xml"]		   =	"xml"
+	["yaml"]	   =	"yaml"
+	["yml"]		   =	"yml"
+}

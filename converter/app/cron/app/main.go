@@ -29,6 +29,7 @@ func deleteFile(directory string){
 
 	dir, err := os.Open(directory)
 	if err != nil {
+		fmt.Println(err)
 		return
 	}
 	defer dir.Close()
@@ -43,13 +44,15 @@ func deleteFile(directory string){
 		path := directory + file.Name()
 		t, err := getCreationTime(path)
 		if err != nil {
+			fmt.Println(err)
 			continue
 		}
 		duration := currentTime.Sub(t)
 		isGreaterThan30Minutes := duration > 30*time.Minute
 		if isGreaterThan30Minutes {
-			err = os.Remove(path)
+			err = os.RemoveAll(path)
 			if err != nil {
+				fmt.Println(err)
 				continue
 			}
 		} 
@@ -57,7 +60,7 @@ func deleteFile(directory string){
 }
 
 func main() {
-	deleteFile("/tmp/file/file")
-	deleteFile("/tmp/file/generatedpkl")
-	deleteFile("/tmp/file/generate")
+	deleteFile("/tmp/file/file/")
+	deleteFile("/tmp/file/generatedpkl/")
+	deleteFile("/tmp/file/generate/")
 }
