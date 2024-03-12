@@ -6,9 +6,11 @@ import (
 	"fmt"
 	"io/fs"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
+	"text/template"
 )
 
 type PklTransformer struct {
@@ -16,6 +18,11 @@ type PklTransformer struct {
 	datas []data.ResponseData
 	dirId string
 	to    []string
+}
+
+type Format struct {
+	Format     string
+	FileFormat string
 }
 
 func NewPklTransformer(datas []data.ResponseData, to []string) *PklTransformer {
@@ -48,18 +55,44 @@ func (p *PklTransformer) TemplatePkl(datas data.ResponseData) error {
 		return err
 	}
 	name, _ := p.GetName(fileInfo)
-	fmt.Println(name)
-	/*tmpl, err := template.ParseFiles("pklTemplate/pkltemplate")
+	tmpl, err := template.ParseFiles("pklTemplate/pkltemplate")
 	if err != nil {
 		return err
 	}
+	if err := utils.CreateDir("/tmp/file/generatedpkl/" + p.dirId); err != nil {
+		return err
+	}
 	file, err := os.Create("/tmp/file/generatedpkl/" + p.dirId + name + ".pkl")
-	*/
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+
+	err = tmpl.Execute(file, Format{
+		Format:     datas.Ct_Label,
+		FileFormat: datas.Path,
+	})
+	return err
+}
+
+func (p *PklTransformer) createPKLFile(datas data.ResponseData) error {
+	fileInfo, err := os.Stat(datas.Path)
+	if err != nil {
+		return err
+	}
+	name, _ := p.GetName(fileInfo)
+	cmd := exec.Command("pkl", "eval", "/tmp/file/generatedpkl/"+p.dirId+name+".pkl", "-o", "/tmp/file/newpkl/"+p.dirId+name+".pkl")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("err, la ", err, string(output))
+		return err
+	}
 	return nil
 }
 
-func (p *PklTransformer) create(datas data.ResponseData) {
-	p.TemplatePkl(datas)
+func (p *PklTransformer) createPKLTemplate(datas data.ResponseData) {
+	fmt.Println(1, p.TemplatePkl(datas))
+	fmt.Println(2, p.createPKLFile(datas))
 }
 
 func (p *PklTransformer) Start() {
@@ -67,7 +100,7 @@ func (p *PklTransformer) Start() {
 		p.wg.Add(1)
 		go func() {
 			defer p.wg.Done()
-			p.create(i)
+			p.createPKLTemplate(i)
 		}()
 	}
 	p.wg.Wait()
