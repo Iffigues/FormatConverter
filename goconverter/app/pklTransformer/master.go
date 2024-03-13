@@ -90,9 +90,27 @@ func (p *PklTransformer) createPKLFile(datas data.ResponseData) error {
 	return nil
 }
 
+func (p *PklTransformer) createToFormatFile(datas data.ResponseData, to string) error {
+	fileInfo, err := os.Stat(datas.Path)
+	if err != nil {
+		return err
+	}
+	name, _ := p.GetName(fileInfo)
+	cmd := exec.Command("pkl", "eval", "-f", to, "/tmp/file/newpkl/"+p.dirId+name+".pkl", "-o", "/tmp/file/generate/"+p.dirId+to+"/"+name+"."+to)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		fmt.Println("err, la ", err, string(output))
+		return err
+	}
+	return nil
+}
+
 func (p *PklTransformer) createPKLTemplate(datas data.ResponseData) {
 	fmt.Println(1, p.TemplatePkl(datas))
 	fmt.Println(2, p.createPKLFile(datas))
+	for _, to := range p.to {
+		fmt.Println(p.createToFormatFile(datas, to))
+	}
 }
 
 func (p *PklTransformer) Start() {
