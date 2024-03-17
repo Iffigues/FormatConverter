@@ -6,6 +6,7 @@ import (
 	"converter/logger"
 	"converter/pklhandler"
 	"converter/server"
+	"converter/uploader"
 	"log"
 )
 
@@ -26,6 +27,8 @@ func main() {
 	}
 	p := pklhandler.NewPKLHandler(confs)
 	serve.AddRoute(p)
+	c := uploader.NewPUploader(confs)
+	serve.AddRoute(c)
 	serve.Start()
 	for {
 		serve.Serve()

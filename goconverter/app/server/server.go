@@ -4,6 +4,7 @@ import (
 	"converter/conf"
 	"converter/logger"
 	"converter/router"
+	"converter/utils"
 	"net/http"
 	"strings"
 
@@ -38,12 +39,28 @@ func (s *Server) Start() {
 	}
 }
 
+func (s *Server) isMatching(url, path string) bool {
+	u := strings.Split(url, "/")
+	p := strings.Split(path, "/")
+	if len(u) == len(p) {
+		for key, val := range u {
+			if val != p[key] {
+				if !utils.StartsWithCurlyBraceAndEndsWithClosingCurlyBrace(p[key]) {
+					return false
+				}
+			}
+		}
+		return true
+	}
+	return false
+}
+
 func (s *Server) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	// Logic to handle incoming requests using s.handle and i.GetRouter
 	for _, i := range s.handle {
 		for _, h := range i.GetRouter() {
-			s := strings.Split(h, " ")
-			if r.URL.Path == s[1] {
+			ss := strings.Split(h, " ")
+			if s.isMatching(r.URL.Path, ss[1]) {
 				i.F(w, r)
 				return
 			}

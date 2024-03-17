@@ -113,7 +113,7 @@ func (p *PklTransformer) createPKLTemplate(datas data.ResponseData) {
 	}
 }
 
-func (p *PklTransformer) Start() {
+func (p *PklTransformer) Start() (int, string, error) {
 	for _, i := range p.datas {
 		p.wg.Add(1)
 		go func() {
@@ -122,4 +122,7 @@ func (p *PklTransformer) Start() {
 		}()
 	}
 	p.wg.Wait()
+	dir := "/tmp/file/generate/" + p.dirId
+	count, err := utils.CountFiles(dir)
+	return count, p.dirId, err
 }
