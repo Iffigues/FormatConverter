@@ -17,10 +17,11 @@ func NewPKLHandler(confs conf.Conf) *PklHandler {
 
 func (p *PklHandler) GetRoute() []*router.Router {
 	l := router.NewMethods("POST", nil)
+	ll := router.NewMethods("GET", nil)
 	return []*router.Router{
 		router.NewRouter([]*router.Methods{l}, "/convert/file", p.UploadFile),
 		router.NewRouter([]*router.Methods{l}, "/convert/text", p.TextToformat),
 		router.NewRouter([]*router.Methods{l}, "/describe/file", p.DescribeFile),
-		router.NewRouter([]*router.Methods{l}, "/describe/file", p.DescribeText),
+		router.NewRouter([]*router.Methods{l, ll}, "/describe/text", p.DescribeText),
 	}
 }

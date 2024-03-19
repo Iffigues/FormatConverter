@@ -1,4 +1,4 @@
-from flask import Flask
+from flask import Flask, request, jsonify
 from magika import Magika
 from pathlib import Path
 import os
@@ -43,6 +43,20 @@ def get_type(a):
         }
         t.append(z)
     return t
+
+@app.route('/submit', methods=['POST'])
+def submit_form():
+    if request.method == 'POST':
+        if request.is_json:
+            # Access JSON data directly
+            submitted_data = request.json['data']
+            print(submitted_data)
+            result = magika.identify_bytes(bytes(submitted_data, 'utf-8'))
+            print(result)
+        return f'The submitted data is: {submitted_data}'
+    else:
+        # If the request method is not POST, return an error
+        return 'Method Not Allowed', 405
 
 @app.route(r'/path/<path:path>')
 def hello_world(path):
