@@ -9,20 +9,20 @@ import (
 	"path/filepath"
 )
 
-func ZipDir(sourceDir string, archiveFile string) error {
-	// Create a zip file
-	outFile, err := os.Create(archiveFile)
+func ZipDir(sourceDir string, archivePath string) error {
+	// Create a new zip file
+	archive, err := os.Create(archivePath)
 	if err != nil {
-		return fmt.Errorf("failed to create zip file: %w", err)
+		return fmt.Errorf("error creating archive: %w", err)
 	}
-	defer outFile.Close()
+	defer archive.Close()
 
 	// Create a new zip writer
-	writer := zip.NewWriter(outFile)
+	writer := zip.NewWriter(archive)
 	defer writer.Close()
 
-	// Walk through the directory recursively
-	return filepath.Walk(sourceDir, func(path string, info os.FileInfo, err error) error {
+	// Function to recursively add files to the zip archive
+	var walkFunc filepath.WalkFunc = func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -32,34 +32,49 @@ func ZipDir(sourceDir string, archiveFile string) error {
 			return nil
 		}
 
-		// Get relative path within the archive
+		// Relative path within the archive
 		relPath, err := filepath.Rel(sourceDir, path)
 		if err != nil {
 			return err
 		}
 
-		// Create a new zip file entry
-		f, err := writer.Create(relPath)
+		// Create a new file header within the zip archive
+		header := &zip.FileHeader{
+			Name:   relPath,
+			Method: zip.Deflate, // Optional compression method
+		}
+
+		// Set permissions based on file type (corrected field name)
+
+		// Create the file entry in the zip archive
+		f, err := writer.CreateHeader(header)
 		if err != nil {
 			return err
 		}
 
-		// If it's a directory, we don't need to add any content
-		if info.IsDir() {
-			return nil
-		}
+		// Open the file to be added (if it's a regular file)
+		if !info.IsDir() {
+			sourceFile, err := os.Open(path)
+			if err != nil {
+				return err
+			}
+			defer sourceFile.Close()
 
-		// Open the file to be added
-		file, err := os.Open(path)
-		if err != nil {
+			// Copy file contents to the zip archive
+			_, err = io.Copy(f, sourceFile)
 			return err
 		}
-		defer file.Close()
 
-		// Copy file contents to the zip archive
-		_, err = io.Copy(f, file)
-		return err
-	})
+		return nil // Continue walking the directory structure for subdirectories
+	}
+
+	// Walk through the directory structure
+	err = filepath.Walk(sourceDir, walkFunc)
+	if err != nil {
+		return fmt.Errorf("error walking directory: %w", err)
+	}
+
+	return nil
 }
 
 func TarDir(sourceDir string, archiveFile string) error {
@@ -94,7 +109,7 @@ func TarDir(sourceDir string, archiveFile string) error {
 		// Create a new tar header
 		header := &tar.Header{
 			Name: relPath,
-			Mode: 0644, // Set appropriate permissions (adjust as needed)
+			Mode: 0777, // Set appropriate permissions (adjust as needed)
 			Size: info.Size(),
 		}
 

@@ -64,14 +64,25 @@ func (p *UploaderHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 			fmt.Println(err)
 			return
 		}
-		fmt.Println("path=", path)
 		p.downloadHandler(w, path)
 		return
 	}
 	if count > 1 {
 		l := utils.GetCompType(strings.Split(r.URL.Path, "/"))
-		fmt.Println(l)
-		utils.ZipDir("/tmp/file/generate/"+idString, "/tmp/file/compressed"+utils.GetUid().String()+".zip")
+		eee := utils.GetUid().String()
+		if l == "tar" {
+			if err := utils.TarDir("/tmp/file/generate/"+idString, "/tmp/file/compressed/"+eee+".tar"); err != nil {
+				fmt.Println(err)
+				return
+			}
+			p.downloadHandler(w, "/tmp/file/compressed/"+eee+".tar")
+			return
+		}
+		if err := utils.TarDir("/tmp/file/generate/"+idString, "/tmp/file/compressed/"+eee+".tar"); err != nil {
+			fmt.Println(err)
+			return
+		}
+		p.downloadHandler(w, "/tmp/file/compressed/"+eee+".tar")
 		return
 	}
 }
