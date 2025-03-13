@@ -1,5 +1,3 @@
-version: '3'
-
 services:
   flask:
     build: ./magika
@@ -10,7 +8,7 @@ services:
 
   go:
     build: ./goconverter
-    volulmes:
+    volumes:
       - shared-data:/convert
     ports:
       - 8780:8780
