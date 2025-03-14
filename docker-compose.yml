@@ -12,6 +12,8 @@ services:
       - shared-data:/convert
     ports:
       - 8780:8780
+    environment:
+      - PORT=8780
 
 volumes:
   shared-data:
