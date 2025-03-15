@@ -1,6 +1,8 @@
 FROM golang:latest
 
-
+RUN mkdir -p /tmp/file/generate
+RUN mkdir -p /tmp/file//generatedpkl
+RUN mkdir -p /tmp/file/file
 COPY ./app /app
 WORKDIR /app
 RUN rm -f go.* && go mod init converter
