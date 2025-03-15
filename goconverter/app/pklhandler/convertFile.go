@@ -51,7 +51,7 @@ func (p *PklHandler) UploadFile(w http.ResponseWriter, r *http.Request) {
 		err := fmt.Errorf("new error")
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
-	}
+	} 
 
 	dirName := utils.GetUid().String()
 	pathUpload := p.confs.Cfg.FileDir + dirName + "/"

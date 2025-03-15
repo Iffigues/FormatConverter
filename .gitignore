@@ -1,1 +1,3 @@
 converter/node_modules
+goconverter/app/go.*
+goconverter/app/appconfig
